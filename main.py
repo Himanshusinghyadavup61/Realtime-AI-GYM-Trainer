@@ -50,16 +50,19 @@ def main():
     if "voice_pipeline" not in st.session_state:
         try:
             api_key = os.environ.get("GROQ_API_KEY", "")
+            groq_model = os.environ.get("GROQ_MODEL")
 
-            if not api_key and hasattr(st, "secrets") and "GROQ_API_KEY" in st.secrets:
-                api_key = st.secrets["GROQ_API_KEY"]
-            
+            try:
+                if hasattr(st, "secrets"):
+                    if not api_key and "GROQ_API_KEY" in st.secrets:
+                        api_key = st.secrets["GROQ_API_KEY"]
+                    if not groq_model and "GROQ_MODEL" in st.secrets:
+                        groq_model = st.secrets["GROQ_MODEL"]
+            except Exception:
+                pass
+
             if not api_key:
                 raise ValueError("GROQ_API_KEY not found in environment variables or secrets")
-            
-            groq_model = os.environ.get("GROQ_MODEL")
-            if not groq_model and hasattr(st, "secrets") and "GROQ_MODEL" in st.secrets:
-                groq_model = st.secrets["GROQ_MODEL"]
             
             groq_client = Groq(api_key=api_key)
             llm_coach = LLMCoach(groq_client, model=groq_model)
