@@ -123,12 +123,6 @@ def main():
                 st.session_state.last_notified_sets_completed = 0
                 st.session_state.last_notified_workout_complete = False
                 st.rerun()
-
-            if st.session_state.get("last_summary"):
-                st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
-                if st.button("📊 View Last Scorecard", use_container_width=True, key="reopen_scorecard_btn"):
-                    st.session_state.show_scorecard = True
-                    st.rerun()
         else:
             exercise = st.session_state.get("exercise_type")
             sets = st.session_state.get("target_sets")
