@@ -364,3 +364,62 @@ def render_scorecard_modal(summary: dict):
         if st.button("Start Next Workout ➔", use_container_width=True, type="primary"):
             st.session_state.show_scorecard = False
             st.rerun()
+
+
+def render_inline_scorecard_banner(summary: dict):
+    """Renders a visible persistent summary banner on the main page when a workout ends."""
+    if not summary:
+        return
+
+    acc = summary.get("accuracy_pct", 0)
+    total_reps = summary.get("total_reps", 0)
+    grade = summary.get("grade", "N/A")
+    color = summary.get("grade_color", "#818cf8")
+    exercise = summary.get("exercise", "Workout")
+    duration = summary.get("duration_formatted", "00:00")
+    cadence = summary.get("cadence_sec_per_rep", 0)
+    flawed_count = summary.get("flawed_reps", 0)
+
+    score_text = f"{acc}%" if total_reps > 0 else "0 Reps"
+
+    st.markdown(
+        f"""
+        <div style="
+            background: linear-gradient(135deg, rgba(26, 33, 50, 0.9), rgba(15, 20, 32, 0.95));
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-left: 6px solid {color};
+            border-radius: 14px;
+            padding: 1.4rem 1.7rem;
+            margin-top: 1.2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5);
+        ">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                <div>
+                    <div style="text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.08em; color: #94a3b8; font-weight: 700;">
+                        🏆 Latest Session Scorecard • {exercise}
+                    </div>
+                    <div style="font-size: 1.35rem; font-weight: 800; color: #f8fafc; margin-top: 4px;">
+                        Performance Score: <span style="color: {color};">{score_text}</span> 
+                        <span style="font-size: 1rem; background: rgba(255,255,255,0.08); padding: 3px 10px; border-radius: 8px; margin-left: 8px; color:{color}; border:1px solid {color};">
+                            Grade {grade}
+                        </span>
+                    </div>
+                    <div style="font-size: 0.92rem; color: #94a3b8; margin-top: 6px;">
+                        Total Reps: <strong style="color:#f1f5f9;">{total_reps}</strong> &nbsp;|&nbsp; 
+                        Clean Reps: <strong style="color:#10b981;">{summary['clean_reps']}</strong> &nbsp;|&nbsp; 
+                        Flawed Reps: <strong style="color:{'#f43f5e' if flawed_count > 0 else '#10b981'};">{flawed_count}</strong> &nbsp;|&nbsp; 
+                        Time: <strong style="color:#f1f5f9;">{duration}</strong> &nbsp;|&nbsp; 
+                        Cadence: <strong style="color:#f1f5f9;">{cadence}s / rep</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    col_btn, _ = st.columns([1.2, 2.8])
+    with col_btn:
+        if st.button("🔍 Open Full Scorecard Details", key="inline_open_scorecard_btn", use_container_width=True):
+            render_scorecard_modal(summary)
+

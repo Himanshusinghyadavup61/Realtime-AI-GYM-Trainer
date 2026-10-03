@@ -19,7 +19,13 @@ from services.persistence.exercise_repository import init_db
 from streamlit_webrtc import webrtc_streamer, WebRtcMode
 from services.vision.exercise_video_processor import VideoProcessorClass
 from services.tracking.metrics import sync_metrics_update
-from services.tracking.analytics import init_analytics_state, start_analytics, finish_analytics, render_scorecard_modal
+from services.tracking.analytics import (
+    init_analytics_state,
+    start_analytics,
+    finish_analytics,
+    render_scorecard_modal,
+    render_inline_scorecard_banner,
+)
 from services.persistence.exercise_repository import get_users_exercises
 from groq import Groq
 from services.coaching.llm import LLMCoach
@@ -123,6 +129,11 @@ def main():
                 st.session_state.last_notified_sets_completed = 0
                 st.session_state.last_notified_workout_complete = False
                 st.rerun()
+
+            if st.session_state.get("last_summary"):
+                st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+                if st.button("📊 View Last Scorecard", use_container_width=True, key="sidebar_view_scorecard_btn"):
+                    render_scorecard_modal(st.session_state.last_summary)
         else:
             exercise = st.session_state.get("exercise_type")
             sets = st.session_state.get("target_sets")
@@ -228,6 +239,9 @@ def main():
         st.success(f"🤖 **Coach:** {st.session_state.coach_feedback}")
 
     if not workout_started:
+        if st.session_state.get("last_summary"):
+            render_inline_scorecard_banner(st.session_state.last_summary)
+
         st.markdown(
             """
             <div style="
