@@ -19,6 +19,7 @@ from services.persistence.exercise_repository import init_db
 from streamlit_webrtc import webrtc_streamer, WebRtcMode
 from services.vision.exercise_video_processor import VideoProcessorClass
 from services.tracking.metrics import sync_metrics_update
+from services.tracking.analytics import init_analytics_state, start_analytics, finish_analytics, render_scorecard_modal
 from services.persistence.exercise_repository import get_users_exercises
 from groq import Groq
 from services.coaching.llm import LLMCoach
@@ -46,6 +47,7 @@ def main():
         return 
 
     initial_session_defaults()
+    init_analytics_state()
 
     if "voice_pipeline" not in st.session_state:
         try:
@@ -106,6 +108,7 @@ def main():
                 st.session_state.workout_started = True
                 st.session_state.set_cycle_started_at = time.time()
                 st.session_state.last_saved_sets_completed = 0
+                start_analytics(plan_exercise, int(plan_sets), int(plan_reps))
 
                 if st.session_state.voice_pipeline:
                     result = st.session_state.voice_pipeline.process_event(
@@ -120,6 +123,12 @@ def main():
                 st.session_state.last_notified_sets_completed = 0
                 st.session_state.last_notified_workout_complete = False
                 st.rerun()
+
+            if st.session_state.get("last_summary"):
+                st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+                if st.button("📊 View Last Scorecard", use_container_width=True, key="reopen_scorecard_btn"):
+                    st.session_state.show_scorecard = True
+                    st.rerun()
         else:
             exercise = st.session_state.get("exercise_type")
             sets = st.session_state.get("target_sets")
@@ -131,6 +140,7 @@ def main():
 
             if end_session_button:
                 st.session_state.workout_started = False
+                finish_analytics()
                 
                 if st.session_state.voice_pipeline:
                     result = st.session_state.voice_pipeline.process_event(
@@ -268,6 +278,10 @@ def main():
             st.session_state.webrtc_styles_injected = True
 
     st.divider()
+
+    # Trigger post-workout scorecard modal if active
+    if st.session_state.get("show_scorecard", False) and st.session_state.get("last_summary"):
+        render_scorecard_modal(st.session_state.last_summary)
 
     st.markdown("#### Workout History")
 

@@ -2,6 +2,7 @@ import streamlit as st
 import time
 from services.config.workout_config import METRICS_FIELDS
 from services.persistence.exercise_repository import add_exercise
+from services.tracking.analytics import track_live_frame, finish_analytics
 
 
 def _set_audio(result):
@@ -37,6 +38,8 @@ def sync_metrics_update(context):
         reps = 0
         
     st.session_state.reps = reps
+
+    track_live_frame(exercise, latest_metrics, reps)
 
     fields = METRICS_FIELDS.get(exercise)
 
@@ -86,6 +89,7 @@ def sync_metrics_update(context):
 
     if workout_completed and not st.session_state.get("last_notified_workout_complete", False):
         st.session_state.last_notified_workout_complete = True
+        finish_analytics()
 
         if st.session_state.get("voice_pipeline"):
             result = st.session_state.voice_pipeline.process_event(
