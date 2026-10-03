@@ -1,5 +1,10 @@
 import os
+import json
+import logging
+import urllib.request
 import streamlit as st
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_ICE_SERVERS = [
     {
@@ -29,23 +34,56 @@ DEFAULT_ICE_SERVERS = [
 ]
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_metered_ice_servers(app_name: str, api_key: str):
+    """
+    Fetches real-time ICE servers directly from Metered API.
+    """
+    try:
+        url = f"https://{app_name}.metered.live/api/v1/turn/credentials?apiKey={api_key}"
+        req = urllib.request.Request(url, headers={"User-Agent": "Streamlit-WebRTC"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            if resp.status == 200:
+                data = json.loads(resp.read().decode())
+                if isinstance(data, list) and len(data) > 0:
+                    return data
+    except Exception as e:
+        logger.warning(f"Could not fetch Metered credentials via API: {e}")
+    return None
+
+
 def get_rtc_configuration():
     """
     Returns WebRTC configuration with STUN and TURN servers.
-    Can be customized via Streamlit secrets or environment variables:
-    
-    Option A (Streamlit secrets):
-        [webrtc]
-        turn_server = "turn:relay.metered.ca:443"
-        turn_username = "your-user"
-        turn_credential = "your-password"
-        
-    Option B (Environment variables):
-        TURN_SERVER=turn:relay.metered.ca:443
-        TURN_USERNAME=your-user
-        TURN_CREDENTIAL=your-password
+    Supports Metered API Key or manual credentials from Streamlit Secrets or Environment Variables.
     """
-    # Check Streamlit secrets
+    # 1. Check for Metered API Key (simplest setup)
+    metered_api_key = None
+    metered_app_name = "ai-gym-coach-app"
+
+    if hasattr(st, "secrets"):
+        if "METERED_API_KEY" in st.secrets:
+            metered_api_key = st.secrets["METERED_API_KEY"]
+        elif "metered" in st.secrets and "api_key" in st.secrets["metered"]:
+            metered_api_key = st.secrets["metered"]["api_key"]
+            metered_app_name = st.secrets["metered"].get("app_name", metered_app_name)
+        elif "webrtc" in st.secrets and "metered_api_key" in st.secrets["webrtc"]:
+            metered_api_key = st.secrets["webrtc"]["metered_api_key"]
+            metered_app_name = st.secrets["webrtc"].get("app_name", metered_app_name)
+
+        if "METERED_APP_NAME" in st.secrets:
+            metered_app_name = st.secrets["METERED_APP_NAME"]
+
+    if not metered_api_key:
+        metered_api_key = os.environ.get("METERED_API_KEY")
+        metered_app_name = os.environ.get("METERED_APP_NAME", metered_app_name)
+
+    if metered_api_key:
+        servers = fetch_metered_ice_servers(metered_app_name, metered_api_key)
+        if servers:
+            return {"iceServers": servers}
+
+    # 2. Check for manual TURN credentials in Streamlit secrets
     if hasattr(st, "secrets"):
         if "rtc_configuration" in st.secrets:
             return dict(st.secrets["rtc_configuration"])
@@ -70,7 +108,7 @@ def get_rtc_configuration():
                     ]
                 }
 
-    # Check environment variables
+    # 3. Check for manual TURN credentials in environment variables
     ts = os.environ.get("TURN_SERVER")
     tu = os.environ.get("TURN_USERNAME")
     tc = os.environ.get("TURN_CREDENTIAL")
