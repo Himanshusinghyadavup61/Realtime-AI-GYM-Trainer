@@ -347,22 +347,31 @@ def render_scorecard_modal(summary: dict):
     st.divider()
 
     # Action / Download Buttons
-    col_dl, col_close = st.columns([1, 1], gap="medium")
+    col_dl, col_next, col_home = st.columns([1, 1, 1], gap="small")
 
     with col_dl:
         json_report = json.dumps(summary, indent=2)
         filename = f"gym_coach_{summary['exercise'].lower().replace(' ', '_')}_{int(time.time())}.json"
         st.download_button(
-            label="📥 Download JSON Report",
+            label="📥 Download JSON",
             data=json_report,
             file_name=filename,
             mime="application/json",
             use_container_width=True,
         )
 
-    with col_close:
-        if st.button("Start Next Workout ➔", use_container_width=True, type="primary"):
+    with col_next:
+        if st.button("Next Workout ➔", use_container_width=True, type="primary"):
             st.session_state.show_scorecard = False
+            st.rerun()
+
+    with col_home:
+        if st.button("🏠 Exit to Home", use_container_width=True):
+            st.session_state.user_id = None
+            st.session_state.username = None
+            st.session_state.workout_started = False
+            st.session_state.show_scorecard = False
+            st.session_state.last_summary = None
             st.rerun()
 
 
@@ -418,8 +427,16 @@ def render_inline_scorecard_banner(summary: dict):
         """,
         unsafe_allow_html=True,
     )
-    col_btn, _ = st.columns([1.2, 2.8])
-    with col_btn:
-        if st.button("🔍 Open Full Scorecard Details", key="inline_open_scorecard_btn", use_container_width=True):
+    col_btn1, col_btn2, _ = st.columns([1.3, 1.2, 1.5])
+    with col_btn1:
+        if st.button("🔍 Open Full Scorecard", key="inline_open_scorecard_btn", use_container_width=True):
             render_scorecard_modal(summary)
+    with col_btn2:
+        if st.button("🏠 Exit to Landing Page", key="inline_exit_home_btn", use_container_width=True):
+            st.session_state.user_id = None
+            st.session_state.username = None
+            st.session_state.workout_started = False
+            st.session_state.show_scorecard = False
+            st.session_state.last_summary = None
+            st.rerun()
 

@@ -89,7 +89,17 @@ def main():
         st.title("🏋️‍♂️ Apna AI Coach")
 
         if st.session_state.username:
-            st.caption(f"👤 Login as {st.session_state.username}")
+            user_col, logout_col = st.columns([1.7, 1.3])
+            with user_col:
+                st.caption(f"👤 **{st.session_state.username}**")
+            with logout_col:
+                if st.button("🚪 Logout", key="sidebar_logout_btn", help="Return to Landing Page"):
+                    st.session_state.user_id = None
+                    st.session_state.username = None
+                    st.session_state.workout_started = False
+                    st.session_state.show_scorecard = False
+                    st.session_state.last_summary = None
+                    st.rerun()
 
         st.divider()
 
