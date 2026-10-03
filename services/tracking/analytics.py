@@ -123,28 +123,33 @@ def finish_analytics() -> dict:
     flawed_reps_count = len(flawed_reps_set)
     clean_reps_count = max(0, total_reps - flawed_reps_count)
 
-    accuracy_pct = 100.0 if total_reps == 0 else round((clean_reps_count / total_reps) * 100, 1)
-
     # Cadence (seconds per rep)
     cadence = round(duration_sec / total_reps, 1) if total_reps > 0 else 0.0
 
-    # Letter grade
-    if accuracy_pct >= 90:
-        grade = "A+"
-        grade_color = "#10b981"
-        verdict = "Elite Form! Outstanding biomechanical consistency."
-    elif accuracy_pct >= 80:
-        grade = "A"
-        grade_color = "#6366f1"
-        verdict = "Great Execution! Minor form adjustments needed."
-    elif accuracy_pct >= 68:
-        grade = "B"
-        grade_color = "#f59e0b"
-        verdict = "Solid Effort. Watch the highlighted form cues."
+    # Letter grade & Accuracy
+    if total_reps == 0:
+        accuracy_pct = 0.0
+        grade = "N/A"
+        grade_color = "#94a3b8"
+        verdict = "No completed repetitions recorded in this session."
     else:
-        grade = "Needs Work"
-        grade_color = "#f43f5e"
-        verdict = "Focus on form over speed. Reduce weight or pace."
+        accuracy_pct = round((clean_reps_count / total_reps) * 100, 1)
+        if accuracy_pct >= 90:
+            grade = "A+"
+            grade_color = "#10b981"
+            verdict = "Elite Form! Outstanding biomechanical consistency."
+        elif accuracy_pct >= 80:
+            grade = "A"
+            grade_color = "#6366f1"
+            verdict = "Great Execution! Minor form adjustments needed."
+        elif accuracy_pct >= 68:
+            grade = "B"
+            grade_color = "#f59e0b"
+            verdict = "Solid Effort. Watch the highlighted form cues."
+        else:
+            grade = "Needs Work"
+            grade_color = "#f43f5e"
+            verdict = "Focus on form over speed. Reduce weight or pace."
 
     summary = {
         "username": st.session_state.get("username", "Athlete"),
@@ -177,12 +182,14 @@ def render_scorecard_modal(summary: dict):
         st.info("No workout summary found.")
         return
 
-    # Visual Score Banner
+    total_reps = summary.get("total_reps", 0)
     acc = summary["accuracy_pct"]
     grade = summary["grade"]
     color = summary["grade_color"]
     exercise = summary["exercise"]
     verdict = summary["verdict"]
+
+    score_display = f"{acc}%" if total_reps > 0 else "0 Reps"
 
     st.markdown(
         f"""
@@ -204,7 +211,7 @@ def render_scorecard_modal(summary: dict):
                     font-weight: 900;
                     color: {color};
                     line-height: 1;
-                ">{acc}%</div>
+                ">{score_display}</div>
                 <div style="
                     background: rgba(255, 255, 255, 0.08);
                     border: 1px solid {color};
@@ -230,7 +237,7 @@ def render_scorecard_modal(summary: dict):
         st.metric(
             label="🎯 Form Accuracy",
             value=f"{summary['clean_reps']} / {summary['total_reps']}",
-            delta=f"{summary['accuracy_pct']}% Clean",
+            delta=f"{summary['accuracy_pct']}% Clean" if total_reps > 0 else "No reps logged",
         )
     with c2:
         st.metric(
@@ -241,7 +248,7 @@ def render_scorecard_modal(summary: dict):
     with c3:
         st.metric(
             label="⚡ Cadence",
-            value=f"{summary['cadence_sec_per_rep']}s",
+            value=f"{summary['cadence_sec_per_rep']}s" if total_reps > 0 else "N/A",
             help="Average time spent per repetition",
         )
     with c4:
@@ -257,7 +264,24 @@ def render_scorecard_modal(summary: dict):
     st.markdown("#### 🔍 Form Analysis & Common Mistakes")
 
     flaws = summary.get("flaws", [])
-    if flaws:
+    if total_reps == 0:
+        st.markdown(
+            """
+            <div style="
+                background: rgba(148, 163, 184, 0.08);
+                border-left: 4px solid #64748b;
+                border-radius: 6px;
+                padding: 12px 16px;
+                color: #94a3b8;
+                font-size: 0.95rem;
+            ">
+                ℹ️ <strong>No completed repetitions were detected.</strong><br>
+                To analyze your biomechanics and form score, ensure your camera has a full-body view and complete at least 1 full rep.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    elif flaws:
         # Group by issue type
         issue_counts = {}
         rep_map = {}
