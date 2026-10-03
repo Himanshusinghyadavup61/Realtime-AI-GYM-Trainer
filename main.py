@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from services.auth.login_wall import render_login_wall
 from services.state.session_defaults import initial_session_defaults
 from services.config.workout_config import EXERCISE_OPTIONS
+from services.config.webrtc_config import get_rtc_configuration
 from services.ui.style_loader import load_css, inject_local_font, inject_webrtc_styles
 from services.persistence.exercise_repository import init_db
 from streamlit_webrtc import webrtc_streamer, WebRtcMode
@@ -49,8 +50,12 @@ def main():
             if not api_key:
                 raise ValueError("GROQ_API_KEY not found in environment variables or secrets")
             
+            groq_model = os.environ.get("GROQ_MODEL")
+            if not groq_model and hasattr(st, "secrets") and "GROQ_MODEL" in st.secrets:
+                groq_model = st.secrets["GROQ_MODEL"]
+            
             groq_client = Groq(api_key=api_key)
-            llm_coach = LLMCoach(groq_client)
+            llm_coach = LLMCoach(groq_client, model=groq_model)
             tts = TextToSpeech()
             st.session_state.voice_pipeline = VoicePipeline(llm_coach, tts)
             st.session_state.voice_pipeline_error = None
@@ -234,7 +239,7 @@ def main():
             key="exercise-analysis",
             mode=WebRtcMode.SENDRECV,
             video_processor_factory=VideoProcessorClass,
-            rtc_configuration={"iceServers":[{"urls":["stun:stun.l.google.com:19302","stun:stun1.l.google.com:19302"]},{"urls":"turn:openrelay.metered.ca:80","username":"openrelayproject","credential":"openrelayproject"},{"urls":"turn:openrelay.metered.ca:443","username":"openrelayproject","credential":"openrelayproject"},{"urls":"turn:openrelay.metered.ca:443?transport=tcp","username":"openrelayproject","credential":"openrelayproject"}]},
+            rtc_configuration=get_rtc_configuration(),
             media_stream_constraints={
                 "video": True,
                 "audio": False
@@ -248,7 +253,9 @@ def main():
             time.sleep(0.25)
             st.rerun()
 
-        inject_webrtc_styles()
+        if not st.session_state.get("webrtc_styles_injected", False):
+            inject_webrtc_styles()
+            st.session_state.webrtc_styles_injected = True
 
     st.divider()
 

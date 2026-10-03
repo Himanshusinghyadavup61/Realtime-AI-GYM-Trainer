@@ -1,14 +1,16 @@
-from services.config.workout_config import PROMPT
+import os
 import logging
+from services.config.workout_config import PROMPT
 
 logger = logging.getLogger(__name__)
 
 
 class LLMCoach:
-    def __init__(self, groq_client):
+    def __init__(self, groq_client, model=None):
         self.client = groq_client
         self.history = []
         self.system_prompt = PROMPT
+        self.model = model or os.environ.get("GROQ_MODEL", "qwen/qwen3.8-27b")
 
     def give_feedback(self, event, issue):
         try:
@@ -24,7 +26,7 @@ class LLMCoach:
             ]
 
             response = self.client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model=self.model,
                 messages=messages,
                 temperature=0.4,
             )
