@@ -1,5 +1,9 @@
 # 🏋️ AI Real-Time Gym Coach
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://realtime-ai-gym-trainer-6hjuxqg8q2quf6hewgthpf.streamlit.app/)
+
+> 🚀 **Live Demo:** [AI Real-time GYM Coach · Streamlit](https://realtime-ai-gym-trainer-6hjuxqg8q2quf6hewgthpf.streamlit.app/)
+
 An intelligent fitness assistant that uses AI-powered pose detection and computer vision to analyze workouts in real time. The system detects body posture, counts repetitions, tracks sets, and provides instant voice coaching through a live webcam interface.
 
 ---
@@ -145,8 +149,12 @@ The app uses SQLite to store workout history with IST timezone handling:
 
 ### Streamlit Cloud
 
+The application is deployed on Streamlit Community Cloud:
+👉 **[Launch Live App](https://realtime-ai-gym-trainer-6hjuxqg8q2quf6hewgthpf.streamlit.app/)**
+
+#### Deploying Your Own Instance:
 1. Push code to GitHub
-2. Go to share.streamlit.io
+2. Go to [share.streamlit.io](https://share.streamlit.io)
 3. Connect your GitHub repo
 4. Add `GROQ_API_KEY` in Secrets
 5. Deploy
